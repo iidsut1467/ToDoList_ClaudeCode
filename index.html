@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDoリスト</title>
+  <!-- 見た目（CSS）は別ファイルに分離 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>ToDo リスト</h1>
+
+    <!-- 入力フォーム：構造だけをHTMLで定義する -->
+    <form id="todo-form" class="todo-form">
+      <input
+        id="todo-input"
+        type="text"
+        placeholder="やることを入力…"
+        autocomplete="off"
+        required>
+      <button type="submit">追加</button>
+    </form>
+
+    <!-- 一覧の中身はJavaScriptが動的に埋める（最初は空） -->
+    <ul id="todo-list" class="todo-list"></ul>
+
+    <p id="empty-message" class="empty-message">まだ項目がありません。</p>
+  </main>
+
+  <!-- 動き（JavaScript）も別ファイルに分離。defer＝HTML読込後に実行 -->
+  <script src="app.js" defer></script>
+</body>
+</html>
