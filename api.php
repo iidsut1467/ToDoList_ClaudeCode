@@ -59,7 +59,8 @@ switch ($method) {
                 $newId = $t["id"] + 1;
             }
         }
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false];
+        $dueAt = trim($input["dueAt"] ?? ""); // 期限（任意）。未入力なら空文字
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;

@@ -42,16 +42,34 @@ h1 {
 /* 入力フォーム */
 .todo-form {
   display: flex;
+  flex-wrap: wrap; /* 期限欄を下の行に折り返す */
   gap: 8px;
   margin-bottom: 20px;
 }
 
-.todo-form input {
+.todo-form > input {
   flex: 1;
   padding: 10px 12px;
   border: 1px solid #dfe3eb;
   border-radius: 8px;
   font-size: 1rem;
+}
+
+/* 期限の入力（フォーム2行目・任意項目） */
+.due-field {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.due-field input {
+  padding: 8px 10px;
+  border: 1px solid #dfe3eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
 }
 
 .todo-form input:focus {
@@ -97,6 +115,17 @@ h1 {
 .todo-item span {
   flex: 1;
   word-break: break-all;
+}
+
+/* 期限の表示（一覧の各項目内） */
+.todo-item .due {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: #eef2fb;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 /* 完了した項目は取り消し線（CSSの得意分野） */

@@ -54,7 +54,8 @@ server.mount_proc "/api.php" do |req, res|
       res.body = JSON.generate({ "error" => "テキストが空です" })
     else
       new_id = (todos.map { |t| t["id"] }.max || 0) + 1
-      todos << { "id" => new_id, "text" => text, "done" => false }
+      due_at = (input["dueAt"] || "").strip # 期限（任意）。未入力なら空文字
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end

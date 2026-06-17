@@ -6,6 +6,7 @@ const API = "api.php"; // 通信相手のサーバー側プログラム
 // よく使うHTML要素を取得しておく
 const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
+const dueInput = document.getElementById("todo-due"); // 期限の入力欄
 const list = document.getElementById("todo-list");
 const emptyMessage = document.getElementById("empty-message");
 
@@ -43,7 +44,17 @@ function render(todos) {
     del.textContent = "×";
     del.addEventListener("click", () => deleteTodo(todo.id));
 
-    li.append(checkbox, span, del);
+    li.append(checkbox, span);
+
+    // 期限（設定されていれば表示。古いデータには無いので "?" で安全に取り出す）
+    if (todo.dueAt) {
+      const due = document.createElement("span");
+      due.className = "due";
+      due.textContent = "📅 " + todo.dueAt;
+      li.append(due);
+    }
+
+    li.append(del);
     list.appendChild(li);
   }
 }
@@ -54,13 +65,16 @@ form.addEventListener("submit", async (e) => {
   const text = input.value.trim();
   if (!text) return;
 
+  const dueAt = dueInput.value;    // 例 "2026-06-20"。未入力なら空文字
+
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, dueAt }),
   });
 
   input.value = "";
+  dueInput.value = "";             // 期限欄もリセット
   loadTodos();                     // 追加後に一覧を更新
 });
 
