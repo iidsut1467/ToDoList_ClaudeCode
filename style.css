@@ -25,8 +25,7 @@ body {
 .container {
   width: 100%;
   max-width: none;          /* ウィンドウ幅いっぱいに広げる */
-  min-height: calc(100vh - 48px); /* 画面の高さいっぱいに */
-  background: var(--card);
+  background: var(--card);  /* 高さは中身に合わせる（無駄な縦長を防ぐ） */
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 28px;
