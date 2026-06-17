@@ -54,7 +54,11 @@ server.mount_proc "/api.php" do |req, res|
       res.body = JSON.generate({ "error" => "テキストが空です" })
     else
       new_id = (todos.map { |t| t["id"] }.max || 0) + 1
-      due_at = (input["dueAt"] || "").strip # 期限（任意）。未入力なら空文字
+      due_at = (input["dueAt"] || "").strip # 入金期限（任意）。未入力なら空文字
+      event_at = (input["eventAt"] || "").strip # 日時・予定（任意）"YYYY-MM-DDTHH:MM"
+      # 費用（円・整数。数値以外や負数は 0 に補正）
+      cost = input["cost"].to_i
+      cost = 0 if cost < 0
       # 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
       priority = input["priority"] || "mid"
       priority = "mid" unless ["high", "mid", "low"].include?(priority)
@@ -73,7 +77,7 @@ server.mount_proc "/api.php" do |req, res|
       end
       # 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
       parent_id = input["parentId"].to_i
-      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min, "parentId" => parent_id }
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "eventAt" => event_at, "cost" => cost, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min, "parentId" => parent_id }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end

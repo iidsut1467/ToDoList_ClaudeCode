@@ -20,8 +20,15 @@
       <button type="submit">追加</button>
       <!-- 詳細項目（すべて任意）。空のままでもOK -->
       <div class="fields">
-        <label class="field">期限
+        <label class="field">入金期限
           <input id="todo-due" type="date">
+        </label>
+        <label class="field">日時(予定)
+          <input id="todo-event" type="datetime-local">
+        </label>
+        <label class="field">費用
+          <input id="todo-cost" type="number" min="0" step="1" placeholder="例: 1500">
+          <span class="unit">円</span>
         </label>
         <label class="field">優先度
           <select id="todo-priority">
@@ -65,10 +72,7 @@
         <tr>
           <th class="col-check">完了</th>
           <th class="col-text">やること</th>
-          <th>期限</th>
-          <th>優先度</th>
-          <th>難度／区分</th>
-          <th>所要時間</th>
+          <th>内容（入力したものだけ表示）</th>
           <th class="col-actions">操作</th>
         </tr>
       </thead>

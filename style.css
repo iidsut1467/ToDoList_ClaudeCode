@@ -124,7 +124,15 @@ h1 {
 /* 列幅の調整 */
 .col-check { width: 44px; text-align: center; }
 .col-actions { width: 1%; white-space: nowrap; }
-.col-text { width: 40%; }
+.col-text { width: 30%; min-width: 160px; }
+
+/* 「内容」セル：入力済みのバッジだけを横並び＋折り返しで表示 */
+.detail-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
 
 /* 操作ボタン（＋子タスク / 編集） */
 .todo-item .action {
@@ -181,6 +189,32 @@ h1 {
   color: #c62828;
   font-weight: 600;
 }
+
+/* 日時（イベント予定）バッジ */
+.todo-item .event {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: #5b6b8c;
+  background: #e9eefb;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* 費用バッジ（金額） */
+.todo-item .cost {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f7a4d;
+  background: #e3f6ea;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* フォームの単位表示（円） */
+.unit { margin-left: 4px; color: var(--muted); font-size: 0.9rem; }
 
 /* 優先度バッジ（高=赤 / 中=黄 / 低=灰） */
 .todo-item .priority {

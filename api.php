@@ -59,7 +59,13 @@ switch ($method) {
                 $newId = $t["id"] + 1;
             }
         }
-        $dueAt = trim($input["dueAt"] ?? ""); // 期限（任意）。未入力なら空文字
+        $dueAt = trim($input["dueAt"] ?? ""); // 入金期限（任意）。未入力なら空文字
+        $eventAt = trim($input["eventAt"] ?? ""); // 日時・予定（任意）"YYYY-MM-DDTHH:MM"
+        // 費用（円・整数。数値以外や負数は 0 に補正）
+        $cost = (int)($input["cost"] ?? 0);
+        if ($cost < 0) {
+            $cost = 0;
+        }
         // 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
         $priority = $input["priority"] ?? "mid";
         if (!in_array($priority, ["high", "mid", "low"], true)) {
@@ -84,7 +90,7 @@ switch ($method) {
         }
         // 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
         $parentId = (int)($input["parentId"] ?? 0);
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin, "parentId" => $parentId];
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "eventAt" => $eventAt, "cost" => $cost, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin, "parentId" => $parentId];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;

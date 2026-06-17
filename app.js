@@ -6,7 +6,9 @@ const API = "api.php"; // 通信相手のサーバー側プログラム
 // よく使うHTML要素を取得しておく
 const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
-const dueInput = document.getElementById("todo-due"); // 期限の入力欄
+const dueInput = document.getElementById("todo-due"); // 入金期限の入力欄
+const eventInput = document.getElementById("todo-event"); // 日時(予定)の入力欄
+const costInput = document.getElementById("todo-cost"); // 費用(円)の入力欄
 const priorityInput = document.getElementById("todo-priority"); // 優先度の選択欄
 const difficultyInput = document.getElementById("todo-difficulty"); // 難度の選択欄
 const estimateInput = document.getElementById("todo-estimate"); // 所要時間の数値
@@ -33,6 +35,18 @@ function formatEstimate(min) {
   if (hours > 0) out += hours + "時間";
   if (mins > 0) out += mins + "分";
   return out;
+}
+
+// 金額を「¥1,500」のように桁区切りで表示する
+function formatYen(cost) {
+  if (!cost || cost <= 0) return "";
+  return "¥" + Number(cost).toLocaleString("ja-JP");
+}
+
+// 日時 "2026-06-20T14:30" を "2026-06-20 14:30"（24時間表記）に整える
+function formatEvent(eventAt) {
+  if (!eventAt) return "";
+  return eventAt.replace("T", " ");
 }
 
 // 期限まであと何日かを返す（今日=0、過去はマイナス。期限なしは null）
@@ -116,8 +130,11 @@ function buildRow(todo, depth) {
   tdText.style.paddingLeft = (8 + depth * 24) + "px";
   tdText.textContent = (depth > 0 ? "└ " : "") + todo.text;
 
-  // 期限（残り日数を添え、近い/超過で色を変える）
-  const tdDue = document.createElement("td");
+  // 内容（入力されている項目だけをバッジで表示。未入力・既定値は出さない）
+  const tdDetail = document.createElement("td");
+  tdDetail.className = "detail-cell";
+
+  // 入金期限（残り日数を添え、近い/超過で色を変える）
   if (todo.dueAt) {
     const due = document.createElement("span");
     due.className = "due";
@@ -133,44 +150,57 @@ function buildRow(todo, depth) {
       suffix = "（" + -d + "日超過）";
       due.classList.add("overdue"); // 期限切れは赤
     }
-    due.textContent = "📅 " + todo.dueAt + " " + suffix;
-    tdDue.append(due);
+    due.textContent = "📅 入金期限 " + todo.dueAt + " " + suffix;
+    tdDetail.append(due);
   }
 
-  // 優先度（色付きバッジ）
-  const tdPr = document.createElement("td");
-  const prLabels = { high: "高", mid: "中", low: "低" };
+  // 日時（イベント等の予定。24時間表記）
+  if (todo.eventAt) {
+    const ev = document.createElement("span");
+    ev.className = "event";
+    ev.textContent = "📆 " + formatEvent(todo.eventAt);
+    tdDetail.append(ev);
+  }
+
+  // 費用（円。0より大きいときだけ）
+  if (todo.cost > 0) {
+    const cs = document.createElement("span");
+    cs.className = "cost";
+    cs.textContent = "💴 " + formatYen(todo.cost);
+    tdDetail.append(cs);
+  }
+
+  // 優先度（既定の「中」は出さない＝高・低のときだけ表示）
+  const prLabels = { high: "高", low: "低" };
   if (prLabels[todo.priority]) {
     const pr = document.createElement("span");
     pr.className = "priority " + todo.priority;
-    pr.textContent = prLabels[todo.priority];
-    tdPr.append(pr);
+    pr.textContent = "優先度: " + prLabels[todo.priority];
+    tdDetail.append(pr);
   }
 
-  // 難度／区分（すぐ終わるならその表示、そうでなければ難度）
-  const tdDf = document.createElement("td");
+  // 難度／区分（すぐ終わる→その表示。難度は既定の「普通」を出さず易・難のみ）
   if (todo.quick) {
     const qk = document.createElement("span");
     qk.className = "quick";
     qk.textContent = "⚡ すぐ終わる";
-    tdDf.append(qk);
+    tdDetail.append(qk);
   } else {
-    const dfLabels = { easy: "易", normal: "普通", hard: "難" };
+    const dfLabels = { easy: "易", hard: "難" };
     if (dfLabels[todo.difficulty]) {
       const df = document.createElement("span");
       df.className = "difficulty " + todo.difficulty;
-      df.textContent = dfLabels[todo.difficulty];
-      tdDf.append(df);
+      df.textContent = "難度: " + dfLabels[todo.difficulty];
+      tdDetail.append(df);
     }
   }
 
   // 所要時間（0より大きければ読みやすく表示）
-  const tdEs = document.createElement("td");
   if (todo.estimateMin > 0) {
     const es = document.createElement("span");
     es.className = "estimate";
     es.textContent = "⏱ " + formatEstimate(todo.estimateMin);
-    tdEs.append(es);
+    tdDetail.append(es);
   }
 
   // 操作（＋子タスク / 編集 / 削除）
@@ -197,7 +227,7 @@ function buildRow(todo, depth) {
 
   tdActions.append(addBtn, editBtn, del);
 
-  tr.append(tdCheck, tdText, tdDue, tdPr, tdDf, tdEs, tdActions);
+  tr.append(tdCheck, tdText, tdDetail, tdActions);
   return tr;
 }
 
@@ -207,7 +237,9 @@ form.addEventListener("submit", async (e) => {
   const text = input.value.trim();
   if (!text) return;
 
-  const dueAt = dueInput.value;        // 例 "2026-06-20"。未入力なら空文字
+  const dueAt = dueInput.value;        // 入金期限 "2026-06-20"。未入力なら空文字
+  const eventAt = eventInput.value;    // 日時(予定) "2026-06-20T14:30"。未入力なら空文字
+  const cost = Math.max(0, Math.round(Number(costInput.value) || 0)); // 費用(円・整数)
   const priority = priorityInput.value;     // "high" / "mid" / "low"
   const quick = quickInput.value === "yes"; // 前提：すぐ終わるか否か
 
@@ -226,11 +258,13 @@ form.addEventListener("submit", async (e) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // フォームからの追加は最上位（根）タスク。parentId は 0
-    body: JSON.stringify({ text, dueAt, priority, quick, difficulty, estimateMin, parentId: 0 }),
+    body: JSON.stringify({ text, dueAt, eventAt, cost, priority, quick, difficulty, estimateMin, parentId: 0 }),
   });
 
   input.value = "";
-  dueInput.value = "";                 // 期限欄もリセット
+  dueInput.value = "";                 // 入金期限もリセット
+  eventInput.value = "";               // 日時もリセット
+  costInput.value = "";                // 費用もリセット
   priorityInput.value = "mid";         // 優先度は「中」に戻す
   quickInput.value = "no";             // すぐ終わる? は「いいえ」に戻す
   difficultyInput.value = "normal";    // 難度は「普通」に戻す
