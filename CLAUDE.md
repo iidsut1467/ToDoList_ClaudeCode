@@ -59,5 +59,20 @@ git push
   git config --global user.email "iidsut1467@gmail.com"
   ```
 
+## 環境構築の経緯・つまずきポイント（参考）
+このMac（Apple Silicon / arm64）でゼロから整えたときの記録。別環境でも似た流れになる。
+- もともと PHP も Homebrew も未導入だった。
+- **Homebrew** を新規インストール（場所は `/opt/homebrew`）。インストール後、新しいシェルで使うには PATH を通す必要がある:
+  ```
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+  ```
+  （`~/.zprofile` に追記済み。これをやらないと `brew: command not found` になる。）
+- `brew install php` で PHP を導入。
+- つまずいた点メモ:
+  - ターミナルのパスワード入力（Homebrewインストール時の `Password:` など）は **打っても画面に何も出ない**。出なくてもそのまま打って Enter でよい。
+  - 新しく入れたツールが `command not found` になるのは、たいてい PATH 未反映。新しいウィンドウを開くか、上の `eval ...` を実行する。
+  - git push のトークン貼り付けも画面に表示されない（正常）。
+- GitHub CLI（`gh`）は未導入。GitHub連携は手動（HTTPS + Personal Access Token）。
+
 ## これからやりたいこと
 - 細かいところを詰めていく（機能追加・改善など）。
