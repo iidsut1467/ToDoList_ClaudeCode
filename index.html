@@ -32,13 +32,32 @@
             <option value="low">低</option>
           </select>
         </label>
-        <label class="field">難度
-          <select id="todo-difficulty">
-            <option value="easy">易しい</option>
-            <option value="normal" selected>普通</option>
-            <option value="hard">難しい</option>
+        <!-- 前提：まず「すぐ終わるか否か」を選ぶ -->
+        <label class="field">すぐ終わる?
+          <select id="todo-quick">
+            <option value="yes">はい</option>
+            <option value="no" selected>いいえ</option>
           </select>
         </label>
+
+        <!-- 「いいえ」のときだけ表示する詳細（難度・所要時間） -->
+        <div class="fields" id="detail-fields">
+          <label class="field">難度
+            <select id="todo-difficulty">
+              <option value="easy">易しい</option>
+              <option value="normal" selected>普通</option>
+              <option value="hard">難しい</option>
+            </select>
+          </label>
+          <label class="field">所要時間
+            <input id="todo-estimate" type="number" min="0" step="1" placeholder="例: 30">
+            <select id="todo-estimate-unit">
+              <option value="min" selected>分</option>
+              <option value="hour">時間</option>
+              <option value="day">日</option>
+            </select>
+          </label>
+        </div>
       </div>
     </form>
 

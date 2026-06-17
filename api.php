@@ -65,12 +65,24 @@ switch ($method) {
         if (!in_array($priority, ["high", "mid", "low"], true)) {
             $priority = "mid";
         }
-        // 難度（easy/normal/hard のいずれか。不正値や未指定は normal に補正）
-        $difficulty = $input["difficulty"] ?? "normal";
+        // 前提：すぐ終わるか否か（真偽値）
+        $quick = (bool)($input["quick"] ?? false);
+        // 難度（easy/normal/hard のいずれか。それ以外は「未設定」として空に）
+        $difficulty = $input["difficulty"] ?? "";
         if (!in_array($difficulty, ["easy", "normal", "hard"], true)) {
-            $difficulty = "normal";
+            $difficulty = "";
         }
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "difficulty" => $difficulty];
+        // 所要時間（分。数値以外や負数は 0 に補正）
+        $estimateMin = (int)($input["estimateMin"] ?? 0);
+        if ($estimateMin < 0) {
+            $estimateMin = 0;
+        }
+        // すぐ終わるタスクは難度・所要時間を持たない
+        if ($quick) {
+            $difficulty = "";
+            $estimateMin = 0;
+        }
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;

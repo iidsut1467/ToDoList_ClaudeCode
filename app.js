@@ -9,6 +9,31 @@ const input = document.getElementById("todo-input");
 const dueInput = document.getElementById("todo-due"); // 期限の入力欄
 const priorityInput = document.getElementById("todo-priority"); // 優先度の選択欄
 const difficultyInput = document.getElementById("todo-difficulty"); // 難度の選択欄
+const estimateInput = document.getElementById("todo-estimate"); // 所要時間の数値
+const estimateUnitInput = document.getElementById("todo-estimate-unit"); // 所要時間の単位(分/時間/日)
+const quickInput = document.getElementById("todo-quick"); // 「すぐ終わる?」の選択欄（前提）
+const detailFields = document.getElementById("detail-fields"); // 難度・所要時間のまとまり
+
+// 「すぐ終わる?」が「はい」のときは、難度・所要時間の入力欄を隠す
+function updateDetailVisibility() {
+  const isQuick = quickInput.value === "yes";
+  detailFields.style.display = isQuick ? "none" : "flex";
+}
+quickInput.addEventListener("change", updateDetailVisibility);
+updateDetailVisibility(); // 最初の表示状態をそろえる
+
+// 分数を「1日2時間30分」のような読みやすい文字列に変換する
+function formatEstimate(min) {
+  if (!min || min <= 0) return "";
+  const days = Math.floor(min / 1440);   // 1日 = 1440分
+  const hours = Math.floor((min % 1440) / 60);
+  const mins = min % 60;
+  let out = "";
+  if (days > 0) out += days + "日";
+  if (hours > 0) out += hours + "時間";
+  if (mins > 0) out += mins + "分";
+  return out;
+}
 const list = document.getElementById("todo-list");
 const emptyMessage = document.getElementById("empty-message");
 
@@ -48,6 +73,14 @@ function render(todos) {
 
     li.append(checkbox, span);
 
+    // 「すぐ終わる」タスク（前提の選択。trueのときバッジ表示）
+    if (todo.quick) {
+      const qk = document.createElement("span");
+      qk.className = "quick";
+      qk.textContent = "⚡ すぐ終わる";
+      li.append(qk);
+    }
+
     // 期限（設定されていれば表示。古いデータには無いので安全に取り出す）
     if (todo.dueAt) {
       const due = document.createElement("span");
@@ -78,6 +111,14 @@ function render(todos) {
       }
     }
 
+    // 所要時間（分で保存。0より大きければ読みやすく表示）
+    if (todo.estimateMin > 0) {
+      const es = document.createElement("span");
+      es.className = "estimate";
+      es.textContent = "⏱ " + formatEstimate(todo.estimateMin);
+      li.append(es);
+    }
+
     li.append(del);
     list.appendChild(li);
   }
@@ -91,18 +132,33 @@ form.addEventListener("submit", async (e) => {
 
   const dueAt = dueInput.value;        // 例 "2026-06-20"。未入力なら空文字
   const priority = priorityInput.value;     // "high" / "mid" / "low"
-  const difficulty = difficultyInput.value; // "easy" / "normal" / "hard"
+  const quick = quickInput.value === "yes"; // 前提：すぐ終わるか否か
+
+  // 「すぐ終わる」なら難度・所要時間は不要（空・0）。
+  // 「いいえ」のときだけ難度と所要時間を取り込む。
+  let difficulty = "";
+  let estimateMin = 0;
+  if (!quick) {
+    difficulty = difficultyInput.value; // "easy" / "normal" / "hard"
+    const unitToMin = { min: 1, hour: 60, day: 1440 };
+    const amount = Number(estimateInput.value) || 0;
+    estimateMin = Math.max(0, Math.round(amount * (unitToMin[estimateUnitInput.value] || 1)));
+  }
 
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, dueAt, priority, difficulty }),
+    body: JSON.stringify({ text, dueAt, priority, quick, difficulty, estimateMin }),
   });
 
   input.value = "";
   dueInput.value = "";                 // 期限欄もリセット
   priorityInput.value = "mid";         // 優先度は「中」に戻す
+  quickInput.value = "no";             // すぐ終わる? は「いいえ」に戻す
   difficultyInput.value = "normal";    // 難度は「普通」に戻す
+  estimateInput.value = "";            // 所要時間もリセット
+  estimateUnitInput.value = "min";     // 単位は「分」に戻す
+  updateDetailVisibility();            // 詳細欄の表示も戻す
   loadTodos();                         // 追加後に一覧を更新
 });
 

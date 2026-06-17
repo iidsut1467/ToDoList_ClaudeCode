@@ -58,10 +58,20 @@ server.mount_proc "/api.php" do |req, res|
       # 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
       priority = input["priority"] || "mid"
       priority = "mid" unless ["high", "mid", "low"].include?(priority)
-      # 難度（easy/normal/hard のいずれか。不正値や未指定は normal に補正）
-      difficulty = input["difficulty"] || "normal"
-      difficulty = "normal" unless ["easy", "normal", "hard"].include?(difficulty)
-      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "difficulty" => difficulty }
+      # 前提：すぐ終わるか否か（真偽値）
+      quick = input["quick"] == true
+      # 難度（easy/normal/hard のいずれか。それ以外は「未設定」として空に）
+      difficulty = input["difficulty"] || ""
+      difficulty = "" unless ["easy", "normal", "hard"].include?(difficulty)
+      # 所要時間（分。数値以外や負数は 0 に補正）
+      estimate_min = input["estimateMin"].to_i
+      estimate_min = 0 if estimate_min < 0
+      # すぐ終わるタスクは難度・所要時間を持たない
+      if quick
+        difficulty = ""
+        estimate_min = 0
+      end
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end
