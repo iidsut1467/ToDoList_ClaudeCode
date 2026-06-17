@@ -55,7 +55,10 @@ server.mount_proc "/api.php" do |req, res|
     else
       new_id = (todos.map { |t| t["id"] }.max || 0) + 1
       due_at = (input["dueAt"] || "").strip # 期限（任意）。未入力なら空文字
-      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at }
+      # 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
+      priority = input["priority"] || "mid"
+      priority = "mid" unless ["high", "mid", "low"].include?(priority)
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end

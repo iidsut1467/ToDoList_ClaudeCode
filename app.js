@@ -7,6 +7,7 @@ const API = "api.php"; // 通信相手のサーバー側プログラム
 const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
 const dueInput = document.getElementById("todo-due"); // 期限の入力欄
+const priorityInput = document.getElementById("todo-priority"); // 優先度の選択欄
 const list = document.getElementById("todo-list");
 const emptyMessage = document.getElementById("empty-message");
 
@@ -46,12 +47,23 @@ function render(todos) {
 
     li.append(checkbox, span);
 
-    // 期限（設定されていれば表示。古いデータには無いので "?" で安全に取り出す）
+    // 期限（設定されていれば表示。古いデータには無いので安全に取り出す）
     if (todo.dueAt) {
       const due = document.createElement("span");
       due.className = "due";
       due.textContent = "📅 " + todo.dueAt;
       li.append(due);
+    }
+
+    // 優先度（設定されていれば色付きバッジで表示）
+    if (todo.priority) {
+      const labels = { high: "優先度: 高", mid: "優先度: 中", low: "優先度: 低" };
+      if (labels[todo.priority]) {
+        const pr = document.createElement("span");
+        pr.className = "priority " + todo.priority;
+        pr.textContent = labels[todo.priority];
+        li.append(pr);
+      }
     }
 
     li.append(del);
@@ -65,16 +77,18 @@ form.addEventListener("submit", async (e) => {
   const text = input.value.trim();
   if (!text) return;
 
-  const dueAt = dueInput.value;    // 例 "2026-06-20"。未入力なら空文字
+  const dueAt = dueInput.value;        // 例 "2026-06-20"。未入力なら空文字
+  const priority = priorityInput.value; // "high" / "mid" / "low"
 
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, dueAt }),
+    body: JSON.stringify({ text, dueAt, priority }),
   });
 
   input.value = "";
   dueInput.value = "";             // 期限欄もリセット
+  priorityInput.value = "mid";     // 優先度は「中」に戻す
   loadTodos();                     // 追加後に一覧を更新
 });
 

@@ -55,21 +55,31 @@ h1 {
   font-size: 1rem;
 }
 
-/* 期限の入力（フォーム2行目・任意項目） */
-.due-field {
+/* 詳細項目（フォーム2行目以降・任意項目） */
+.fields {
   flex: 1 1 100%;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.9rem;
+}
+
+.field {
+  flex: 1 1 45%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 
-.due-field input {
+.field select,
+.field input {
+  flex: 1;
+  min-width: 0;
   padding: 8px 10px;
   border: 1px solid #dfe3eb;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .todo-form input:focus {
@@ -126,6 +136,30 @@ h1 {
   padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+/* 優先度バッジ（高=赤 / 中=黄 / 低=灰） */
+.todo-item .priority {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.todo-item .priority.high {
+  background: #ffe2e2;
+  color: #d33636;
+}
+
+.todo-item .priority.mid {
+  background: #fff2d8;
+  color: #b8860b;
+}
+
+.todo-item .priority.low {
+  background: #e8eef7;
+  color: #66718a;
 }
 
 /* 完了した項目は取り消し線（CSSの得意分野） */

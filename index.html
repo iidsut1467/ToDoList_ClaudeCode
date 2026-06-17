@@ -20,10 +20,19 @@
         autocomplete="off"
         required>
       <button type="submit">追加</button>
-      <!-- 期限（任意）。空のままでもOK -->
-      <label class="due-field">期限
-        <input id="todo-due" type="date">
-      </label>
+      <!-- 詳細項目（すべて任意）。空のままでもOK -->
+      <div class="fields">
+        <label class="field">期限
+          <input id="todo-due" type="date">
+        </label>
+        <label class="field">優先度
+          <select id="todo-priority">
+            <option value="high">高</option>
+            <option value="mid" selected>中</option>
+            <option value="low">低</option>
+          </select>
+        </label>
+      </div>
     </form>
 
     <!-- 一覧の中身はJavaScriptが動的に埋める（最初は空） -->

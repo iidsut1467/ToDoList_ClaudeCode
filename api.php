@@ -60,7 +60,12 @@ switch ($method) {
             }
         }
         $dueAt = trim($input["dueAt"] ?? ""); // 期限（任意）。未入力なら空文字
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt];
+        // 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
+        $priority = $input["priority"] ?? "mid";
+        if (!in_array($priority, ["high", "mid", "low"], true)) {
+            $priority = "mid";
+        }
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;
