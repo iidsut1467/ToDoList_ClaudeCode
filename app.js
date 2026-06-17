@@ -231,7 +231,14 @@ function buildRow(todo, depth) {
   return tr;
 }
 
-// --- 追加：フォーム送信時 ---
+// Enterキーだけでは追加しない（誤入力防止）。追加は「追加」ボタンで確定する。
+form.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+  }
+});
+
+// --- 追加：フォーム送信時（「追加」ボタンで確定） ---
 form.addEventListener("submit", async (e) => {
   e.preventDefault();              // ページ再読み込みを止める
   const text = input.value.trim();
