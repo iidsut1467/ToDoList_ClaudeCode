@@ -138,6 +138,20 @@ h1 {
   white-space: nowrap;
 }
 
+/* 期限が近い（2日以内・当日） */
+.todo-item .due.soon {
+  background: #fff0d4;
+  color: #b8761b;
+  font-weight: 600;
+}
+
+/* 期限切れ */
+.todo-item .due.overdue {
+  background: #ffdede;
+  color: #c62828;
+  font-weight: 600;
+}
+
 /* 優先度バッジ（高=赤 / 中=黄 / 低=灰） */
 .todo-item .priority {
   flex: 0 0 auto;

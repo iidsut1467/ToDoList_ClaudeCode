@@ -34,6 +34,30 @@ function formatEstimate(min) {
   if (mins > 0) out += mins + "分";
   return out;
 }
+
+// 期限まであと何日かを返す（今日=0、過去はマイナス。期限なしは null）
+function daysUntil(dueAt) {
+  if (!dueAt) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);            // 時刻を切り捨てて「日」で比較
+  const due = new Date(dueAt + "T00:00:00");
+  return Math.round((due - today) / 86400000); // 86400000ミリ秒 = 1日
+}
+
+// 一覧を「期限が近い順」に並べ替える（自動の優先順位づけ）
+function sortTodos(todos) {
+  const rank = { high: 0, mid: 1, low: 2 }; // 優先度の並び順
+  return todos.slice().sort((a, b) => {
+    // 完了したものは下へ
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    // 期限が近い順。期限なしは一番うしろ（Infinity）
+    const da = a.dueAt ? new Date(a.dueAt + "T00:00:00").getTime() : Infinity;
+    const db = b.dueAt ? new Date(b.dueAt + "T00:00:00").getTime() : Infinity;
+    if (da !== db) return da - db;
+    // 期限が同じ（または両方なし）なら優先度が高い順
+    return (rank[a.priority] ?? 1) - (rank[b.priority] ?? 1);
+  });
+}
 const list = document.getElementById("todo-list");
 const emptyMessage = document.getElementById("empty-message");
 
@@ -51,7 +75,7 @@ function render(todos) {
   // 空かどうかでメッセージの表示を切り替え
   emptyMessage.style.display = todos.length === 0 ? "block" : "none";
 
-  for (const todo of todos) {
+  for (const todo of sortTodos(todos)) {
     const li = document.createElement("li");
     li.className = "todo-item" + (todo.done ? " done" : "");
 
@@ -81,11 +105,23 @@ function render(todos) {
       li.append(qk);
     }
 
-    // 期限（設定されていれば表示。古いデータには無いので安全に取り出す）
+    // 期限（設定されていれば表示。残り日数も添え、近い/超過で色を変える）
     if (todo.dueAt) {
       const due = document.createElement("span");
       due.className = "due";
-      due.textContent = "📅 " + todo.dueAt;
+      const d = daysUntil(todo.dueAt);
+      let suffix = "";
+      if (d > 0) {
+        suffix = "（あと" + d + "日）";
+        if (d <= 2) due.classList.add("soon"); // 2日以内はオレンジ
+      } else if (d === 0) {
+        suffix = "（今日まで）";
+        due.classList.add("soon");
+      } else {
+        suffix = "（" + -d + "日超過）";
+        due.classList.add("overdue"); // 期限切れは赤
+      }
+      due.textContent = "📅 " + todo.dueAt + " " + suffix;
       li.append(due);
     }
 
