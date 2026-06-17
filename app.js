@@ -58,7 +58,8 @@ function sortTodos(todos) {
     return (rank[a.priority] ?? 1) - (rank[b.priority] ?? 1);
   });
 }
-const list = document.getElementById("todo-list");
+const list = document.getElementById("todo-list");       // 表の本体(tbody)
+const table = document.getElementById("todo-table");     // 表全体
 const emptyMessage = document.getElementById("empty-message");
 
 // --- サーバーから一覧を取得して画面に描画する ---
@@ -72,40 +73,31 @@ async function loadTodos() {
 function render(todos) {
   list.innerHTML = ""; // いったん空にしてから作り直す
 
-  // 空かどうかでメッセージの表示を切り替え
-  emptyMessage.style.display = todos.length === 0 ? "block" : "none";
+  // 空のときは表を隠してメッセージを出す
+  const hasItems = todos.length > 0;
+  emptyMessage.style.display = hasItems ? "none" : "block";
+  table.style.display = hasItems ? "table" : "none";
 
   for (const todo of sortTodos(todos)) {
-    const li = document.createElement("li");
-    li.className = "todo-item" + (todo.done ? " done" : "");
+    const tr = document.createElement("tr");
+    tr.className = "todo-item" + (todo.done ? " done" : "");
 
-    // チェックボックス（完了の切り替え）
+    // 完了（チェックボックス）
+    const tdCheck = document.createElement("td");
+    tdCheck.className = "col-check";
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = todo.done;
     checkbox.addEventListener("change", () => toggleTodo(todo.id, checkbox.checked));
+    tdCheck.append(checkbox);
 
-    // テキスト
-    const span = document.createElement("span");
-    span.textContent = todo.text;
+    // やること（テキスト）
+    const tdText = document.createElement("td");
+    tdText.className = "col-text text-cell";
+    tdText.textContent = todo.text;
 
-    // 削除ボタン
-    const del = document.createElement("button");
-    del.className = "delete";
-    del.textContent = "×";
-    del.addEventListener("click", () => deleteTodo(todo.id));
-
-    li.append(checkbox, span);
-
-    // 「すぐ終わる」タスク（前提の選択。trueのときバッジ表示）
-    if (todo.quick) {
-      const qk = document.createElement("span");
-      qk.className = "quick";
-      qk.textContent = "⚡ すぐ終わる";
-      li.append(qk);
-    }
-
-    // 期限（設定されていれば表示。残り日数も添え、近い/超過で色を変える）
+    // 期限（残り日数を添え、近い/超過で色を変える）
+    const tdDue = document.createElement("td");
     if (todo.dueAt) {
       const due = document.createElement("span");
       due.className = "due";
@@ -122,41 +114,56 @@ function render(todos) {
         due.classList.add("overdue"); // 期限切れは赤
       }
       due.textContent = "📅 " + todo.dueAt + " " + suffix;
-      li.append(due);
+      tdDue.append(due);
     }
 
-    // 優先度（設定されていれば色付きバッジで表示）
-    if (todo.priority) {
-      const labels = { high: "優先度: 高", mid: "優先度: 中", low: "優先度: 低" };
-      if (labels[todo.priority]) {
-        const pr = document.createElement("span");
-        pr.className = "priority " + todo.priority;
-        pr.textContent = labels[todo.priority];
-        li.append(pr);
-      }
+    // 優先度（色付きバッジ）
+    const tdPr = document.createElement("td");
+    const prLabels = { high: "高", mid: "中", low: "低" };
+    if (prLabels[todo.priority]) {
+      const pr = document.createElement("span");
+      pr.className = "priority " + todo.priority;
+      pr.textContent = prLabels[todo.priority];
+      tdPr.append(pr);
     }
 
-    // 難度（設定されていればバッジで表示）
-    if (todo.difficulty) {
-      const labels = { easy: "難度: 易", normal: "難度: 普通", hard: "難度: 難" };
-      if (labels[todo.difficulty]) {
+    // 難度／区分（すぐ終わるならその表示、そうでなければ難度）
+    const tdDf = document.createElement("td");
+    if (todo.quick) {
+      const qk = document.createElement("span");
+      qk.className = "quick";
+      qk.textContent = "⚡ すぐ終わる";
+      tdDf.append(qk);
+    } else {
+      const dfLabels = { easy: "易", normal: "普通", hard: "難" };
+      if (dfLabels[todo.difficulty]) {
         const df = document.createElement("span");
         df.className = "difficulty " + todo.difficulty;
-        df.textContent = labels[todo.difficulty];
-        li.append(df);
+        df.textContent = dfLabels[todo.difficulty];
+        tdDf.append(df);
       }
     }
 
-    // 所要時間（分で保存。0より大きければ読みやすく表示）
+    // 所要時間（0より大きければ読みやすく表示）
+    const tdEs = document.createElement("td");
     if (todo.estimateMin > 0) {
       const es = document.createElement("span");
       es.className = "estimate";
       es.textContent = "⏱ " + formatEstimate(todo.estimateMin);
-      li.append(es);
+      tdEs.append(es);
     }
 
-    li.append(del);
-    list.appendChild(li);
+    // 削除ボタン
+    const tdDel = document.createElement("td");
+    tdDel.className = "col-del";
+    const del = document.createElement("button");
+    del.className = "delete";
+    del.textContent = "×";
+    del.addEventListener("click", () => deleteTodo(todo.id));
+    tdDel.append(del);
+
+    tr.append(tdCheck, tdText, tdDue, tdPr, tdDf, tdEs, tdDel);
+    list.appendChild(tr);
   }
 }
 

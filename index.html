@@ -61,8 +61,21 @@
       </div>
     </form>
 
-    <!-- 一覧の中身はJavaScriptが動的に埋める（最初は空） -->
-    <ul id="todo-list" class="todo-list"></ul>
+    <!-- 一覧は表で表示。中身(tbody)はJavaScriptが動的に埋める -->
+    <table id="todo-table" class="todo-table">
+      <thead>
+        <tr>
+          <th class="col-check">完了</th>
+          <th class="col-text">やること</th>
+          <th>期限</th>
+          <th>優先度</th>
+          <th>難度／区分</th>
+          <th>所要時間</th>
+          <th class="col-del"></th>
+        </tr>
+      </thead>
+      <tbody id="todo-list"></tbody>
+    </table>
 
     <p id="empty-message" class="empty-message">まだ項目がありません。</p>
   </main>
