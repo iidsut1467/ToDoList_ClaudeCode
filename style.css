@@ -162,6 +162,30 @@ h1 {
   color: #66718a;
 }
 
+/* 難度バッジ（易=緑 / 普通=灰 / 難=紫） */
+.todo-item .difficulty {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.todo-item .difficulty.easy {
+  background: #e3f5e9;
+  color: #2e8b57;
+}
+
+.todo-item .difficulty.normal {
+  background: #eef0f4;
+  color: #66718a;
+}
+
+.todo-item .difficulty.hard {
+  background: #efe6fb;
+  color: #7b4fc0;
+}
+
 /* 完了した項目は取り消し線（CSSの得意分野） */
 .todo-item.done span {
   text-decoration: line-through;

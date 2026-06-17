@@ -8,6 +8,7 @@ const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
 const dueInput = document.getElementById("todo-due"); // 期限の入力欄
 const priorityInput = document.getElementById("todo-priority"); // 優先度の選択欄
+const difficultyInput = document.getElementById("todo-difficulty"); // 難度の選択欄
 const list = document.getElementById("todo-list");
 const emptyMessage = document.getElementById("empty-message");
 
@@ -66,6 +67,17 @@ function render(todos) {
       }
     }
 
+    // 難度（設定されていればバッジで表示）
+    if (todo.difficulty) {
+      const labels = { easy: "難度: 易", normal: "難度: 普通", hard: "難度: 難" };
+      if (labels[todo.difficulty]) {
+        const df = document.createElement("span");
+        df.className = "difficulty " + todo.difficulty;
+        df.textContent = labels[todo.difficulty];
+        li.append(df);
+      }
+    }
+
     li.append(del);
     list.appendChild(li);
   }
@@ -78,18 +90,20 @@ form.addEventListener("submit", async (e) => {
   if (!text) return;
 
   const dueAt = dueInput.value;        // 例 "2026-06-20"。未入力なら空文字
-  const priority = priorityInput.value; // "high" / "mid" / "low"
+  const priority = priorityInput.value;     // "high" / "mid" / "low"
+  const difficulty = difficultyInput.value; // "easy" / "normal" / "hard"
 
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, dueAt, priority }),
+    body: JSON.stringify({ text, dueAt, priority, difficulty }),
   });
 
   input.value = "";
-  dueInput.value = "";             // 期限欄もリセット
-  priorityInput.value = "mid";     // 優先度は「中」に戻す
-  loadTodos();                     // 追加後に一覧を更新
+  dueInput.value = "";                 // 期限欄もリセット
+  priorityInput.value = "mid";         // 優先度は「中」に戻す
+  difficultyInput.value = "normal";    // 難度は「普通」に戻す
+  loadTodos();                         // 追加後に一覧を更新
 });
 
 // --- 完了状態の切り替え ---

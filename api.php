@@ -65,7 +65,12 @@ switch ($method) {
         if (!in_array($priority, ["high", "mid", "low"], true)) {
             $priority = "mid";
         }
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority];
+        // 難度（easy/normal/hard のいずれか。不正値や未指定は normal に補正）
+        $difficulty = $input["difficulty"] ?? "normal";
+        if (!in_array($difficulty, ["easy", "normal", "hard"], true)) {
+            $difficulty = "normal";
+        }
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "difficulty" => $difficulty];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;

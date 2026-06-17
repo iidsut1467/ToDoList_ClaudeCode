@@ -58,7 +58,10 @@ server.mount_proc "/api.php" do |req, res|
       # 優先度（high/mid/low のいずれか。不正値や未指定は mid に補正）
       priority = input["priority"] || "mid"
       priority = "mid" unless ["high", "mid", "low"].include?(priority)
-      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority }
+      # 難度（easy/normal/hard のいずれか。不正値や未指定は normal に補正）
+      difficulty = input["difficulty"] || "normal"
+      difficulty = "normal" unless ["easy", "normal", "hard"].include?(difficulty)
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "difficulty" => difficulty }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end
