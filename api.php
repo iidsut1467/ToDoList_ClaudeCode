@@ -7,14 +7,25 @@ header("Content-Type: application/json; charset=utf-8");
 
 $dataFile = __DIR__ . "/data.json";
 
-// --- 保存ファイルを読み込む（無ければ空配列） ---
-function loadData($file) {
+// --- 保存ファイルを読み込む（{budget, todos} 形式で返す。旧形式=配列にも対応） ---
+function loadStore($file) {
+    $default = ["budget" => 0, "todos" => []];
     if (!file_exists($file)) {
-        return [];
+        return $default;
     }
-    $json = file_get_contents($file);
-    $data = json_decode($json, true);
-    return is_array($data) ? $data : [];
+    $data = json_decode(file_get_contents($file), true);
+    if (!is_array($data)) {
+        return $default;
+    }
+    // 新形式（オブジェクト：todos を持つ）
+    if (array_key_exists("todos", $data)) {
+        return [
+            "budget" => (int)($data["budget"] ?? 0),
+            "todos"  => is_array($data["todos"]) ? $data["todos"] : [],
+        ];
+    }
+    // 旧形式（todos の配列だけ）→ 予算0で包む（後方互換）
+    return ["budget" => 0, "todos" => $data];
 }
 
 // --- 保存ファイルに書き込む ---
@@ -34,13 +45,14 @@ function getInput() {
 }
 
 $method = $_SERVER["REQUEST_METHOD"];
-$todos = loadData($dataFile);
+$store = loadStore($dataFile);
+$todos = $store["todos"];
 
 switch ($method) {
 
-    // 一覧を返す
+    // 予算と一覧({budget, todos})を返す
     case "GET":
-        echo json_encode($todos, JSON_UNESCAPED_UNICODE);
+        echo json_encode($store, JSON_UNESCAPED_UNICODE);
         break;
 
     // 新規追加
@@ -91,13 +103,25 @@ switch ($method) {
         // 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
         $parentId = (int)($input["parentId"] ?? 0);
         $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "eventAt" => $eventAt, "cost" => $cost, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin, "parentId" => $parentId];
-        saveData($dataFile, $todos);
+        $store["todos"] = $todos;
+        saveData($dataFile, $store);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;
 
-    // 更新（完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
+    // 更新（予算の設定 / 完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
     case "PUT":
         $input = getInput();
+        // 予算の設定（budget が送られてきたとき）
+        if (array_key_exists("budget", $input)) {
+            $budget = (int)$input["budget"];
+            if ($budget < 0) {
+                $budget = 0;
+            }
+            $store["budget"] = $budget;
+            saveData($dataFile, $store);
+            echo json_encode(["ok" => true]);
+            break;
+        }
         $id = $input["id"] ?? null;
         foreach ($todos as &$t) {
             if ($t["id"] === $id) {
@@ -115,7 +139,8 @@ switch ($method) {
             }
         }
         unset($t); // 参照を解除（PHPのforeach&定番の後始末）
-        saveData($dataFile, $todos);
+        $store["todos"] = $todos;
+        saveData($dataFile, $store);
         echo json_encode(["ok" => true]);
         break;
 
@@ -139,7 +164,8 @@ switch ($method) {
         $todos = array_values(array_filter($todos, function ($t) use ($toDelete) {
             return !in_array($t["id"], $toDelete, true);
         }));
-        saveData($dataFile, $todos);
+        $store["todos"] = $todos;
+        saveData($dataFile, $store);
         echo json_encode(["ok" => true]);
         break;
 

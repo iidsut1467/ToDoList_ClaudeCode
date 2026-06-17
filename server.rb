@@ -20,17 +20,25 @@ end
 DIR  = File.expand_path(File.dirname(__FILE__))
 DATA = File.join(DIR, "data.json")
 
-# --- 保存ファイルを読み込む（無ければ空配列） ---
-def load_data
-  return [] unless File.exist?(DATA)
-  JSON.parse(File.read(DATA))
+# --- 保存ファイルを読み込む（{budget, todos} 形式で返す。旧形式=配列にも対応） ---
+def load_store
+  default = { "budget" => 0, "todos" => [] }
+  return default unless File.exist?(DATA)
+  data = JSON.parse(File.read(DATA))
+  if data.is_a?(Hash) && data.key?("todos")
+    { "budget" => data["budget"].to_i, "todos" => (data["todos"].is_a?(Array) ? data["todos"] : []) }
+  elsif data.is_a?(Array)
+    { "budget" => 0, "todos" => data } # 旧形式（配列だけ）→ 予算0で包む（後方互換）
+  else
+    default
+  end
 rescue StandardError
-  []
+  { "budget" => 0, "todos" => [] }
 end
 
 # --- 保存ファイルに書き込む（日本語はそのまま、見やすく整形） ---
-def save_data(todos)
-  File.write(DATA, JSON.pretty_generate(todos))
+def save_store(store)
+  File.write(DATA, JSON.pretty_generate(store))
 end
 
 # DocumentRoot を指定すると index.html などの静的ファイルを自動配信してくれる
@@ -40,11 +48,12 @@ server = WEBrick::HTTPServer.new(Port: 8000, DocumentRoot: DIR)
 # （フロントの app.js が api.php に向けて通信しているため、名前を合わせている）
 server.mount_proc "/api.php" do |req, res|
   res["Content-Type"] = "application/json; charset=utf-8"
-  todos = load_data
+  store = load_store
+  todos = store["todos"]
 
   case req.request_method
-  when "GET" # 一覧を返す
-    res.body = JSON.generate(todos)
+  when "GET" # 予算と一覧({budget, todos})を返す
+    res.body = JSON.generate(store)
 
   when "POST" # 新規追加
     input = (JSON.parse(req.body) rescue {})
@@ -78,22 +87,30 @@ server.mount_proc "/api.php" do |req, res|
       # 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
       parent_id = input["parentId"].to_i
       todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "eventAt" => event_at, "cost" => cost, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min, "parentId" => parent_id }
-      save_data(todos)
+      save_store(store)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end
 
-  when "PUT" # 更新（完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
+  when "PUT" # 更新（予算の設定 / 完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
     input = (JSON.parse(req.body) rescue {})
-    todos.each do |t|
-      next unless t["id"] == input["id"]
-      t["done"] = !!input["done"] if input.key?("done")
-      if input.key?("text")
-        new_text = input["text"].to_s.strip
-        t["text"] = new_text unless new_text.empty?
+    if input.key?("budget") # 予算の設定
+      budget = input["budget"].to_i
+      budget = 0 if budget < 0
+      store["budget"] = budget
+      save_store(store)
+      res.body = JSON.generate({ "ok" => true })
+    else
+      todos.each do |t|
+        next unless t["id"] == input["id"]
+        t["done"] = !!input["done"] if input.key?("done")
+        if input.key?("text")
+          new_text = input["text"].to_s.strip
+          t["text"] = new_text unless new_text.empty?
+        end
       end
+      save_store(store)
+      res.body = JSON.generate({ "ok" => true })
     end
-    save_data(todos)
-    res.body = JSON.generate({ "ok" => true })
 
   when "DELETE" # 削除（指定タスクと、その子孫すべてを削除）
     input = (JSON.parse(req.body) rescue {})
@@ -107,7 +124,7 @@ server.mount_proc "/api.php" do |req, res|
       break if to_delete.size == before
     end
     todos.reject! { |t| to_delete.include?(t["id"]) }
-    save_data(todos)
+    save_store(store)
     res.body = JSON.generate({ "ok" => true })
 
   else

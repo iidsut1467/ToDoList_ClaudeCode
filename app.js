@@ -75,13 +75,48 @@ function sortTodos(todos) {
 const list = document.getElementById("todo-list");       // 表の本体(tbody)
 const table = document.getElementById("todo-table");     // 表全体
 const emptyMessage = document.getElementById("empty-message");
+const budgetInput = document.getElementById("budget-input");   // 予算の入力欄
+const budgetSaveBtn = document.getElementById("budget-save");  // 予算の設定ボタン
+const budgetSummary = document.getElementById("budget-summary"); // 予算・合計・残りの表示
 
-// --- サーバーから一覧を取得して画面に描画する ---
+// 金額を必ず「¥0」も含めて桁区切り表示する（バッジ用 formatYen は0を空にするので別物）
+function yen(n) {
+  return "¥" + Number(n || 0).toLocaleString("ja-JP");
+}
+
+// 予算・合計費用・残額を計算して表示する
+function renderBudgetSummary(budget, todos) {
+  const total = todos.reduce((sum, t) => sum + (Number(t.cost) || 0), 0);
+  const remaining = budget - total;
+  budgetSummary.textContent =
+    "予算 " + yen(budget) + " ／ 合計費用 " + yen(total) + " ／ 残り " + yen(remaining);
+  budgetSummary.classList.toggle("over", remaining < 0); // 予算オーバーは赤
+}
+
+// --- サーバーから予算と一覧を取得して画面に描画する ---
 async function loadTodos() {
-  const res = await fetch(API);            // GETリクエスト：一覧をください
-  const todos = await res.json();          // PHPが返したJSONを配列に変換
+  const res = await fetch(API);            // GETリクエスト：{budget, todos} をください
+  const data = await res.json();
+  const budget = data.budget || 0;
+  const todos = data.todos || [];
+  // 入力中の上書きを避けるため、予算欄にカーソルが無いときだけ値を反映
+  if (document.activeElement !== budgetInput) {
+    budgetInput.value = budget ? budget : "";
+  }
+  renderBudgetSummary(budget, todos);
   render(todos);
 }
+
+// 「設定」ボタンで予算を保存する
+budgetSaveBtn.addEventListener("click", async () => {
+  const budget = Math.max(0, Math.round(Number(budgetInput.value) || 0));
+  await fetch(API, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ budget }),
+  });
+  loadTodos();
+});
 
 // --- 受け取った配列を木構造（根→節→葉）に組み立てて表示する ---
 function render(todos) {

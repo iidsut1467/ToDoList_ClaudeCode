@@ -37,6 +37,50 @@ h1 {
   text-align: center;
 }
 
+/* 予算バー */
+.budget-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: #f0f4ff;
+  border-radius: 10px;
+}
+
+.budget-bar .field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.budget-bar input {
+  width: 140px;
+  padding: 8px 10px;
+  border: 1px solid #dfe3eb;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.budget-bar button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.budget-summary {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.budget-summary.over {
+  color: var(--danger); /* 予算オーバーは赤 */
+}
+
 /* 入力フォーム */
 .todo-form {
   display: flex;

@@ -9,6 +9,16 @@
 </head>
 <body>
   <main class="container">
+    <!-- 予算バー：あらかじめ予算を設定し、合計費用と残額を表示する -->
+    <section class="budget-bar">
+      <label class="field">予算
+        <input id="budget-input" type="number" min="0" step="1" placeholder="例: 50000">
+        <span class="unit">円</span>
+      </label>
+      <button id="budget-save" type="button">設定</button>
+      <span id="budget-summary" class="budget-summary"></span>
+    </section>
+
     <!-- 入力フォーム：構造だけをHTMLで定義する -->
     <form id="todo-form" class="todo-form">
       <input

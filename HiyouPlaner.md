@@ -35,8 +35,14 @@
   「内容」セルには **入力済みの項目だけ** をバッジ表示（未入力・既定値の優先度=中/難度=普通は出さない）→ 窮屈・縦長を解消。
 - 「期限」ラベルは意味に合わせ **「入金期限」** に改名。
 
-データ1件の形（現在）:
-`{ id, text, done, dueAt, eventAt, cost, priority, quick, difficulty, estimateMin, parentId }`
+- **予算 `budget`**: あらかじめ予算（円）を設定 → 「予算／合計費用／残り」を表示（オーバーは赤）。
+  合計費用は全タスクの `cost` の合計。
+- **誤入力防止**: フォームは Enter 単独では追加せず、「追加」ボタンで確定。
+
+データの保存形式（現在）:
+- data.json は **`{ "budget": 整数, "todos": [ ... ] }`** のオブジェクト形式。
+  - 旧形式（todos の配列だけ）も読み込み時に自動で包む（後方互換）。
+- タスク1件: `{ id, text, done, dueAt, eventAt, cost, priority, quick, difficulty, estimateMin, parentId }`
 
 ## これからの予定（設計中）
 方向性: タスクに **費用・日時・ジャンル（分類）** を加える。さらに、
