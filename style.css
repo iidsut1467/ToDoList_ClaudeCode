@@ -19,14 +19,13 @@ body {
   font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
   background: var(--bg);
   color: var(--text);
-  display: flex;
-  justify-content: center;
-  padding: 40px 16px;
+  padding: 24px;
 }
 
 .container {
   width: 100%;
-  max-width: 760px;
+  max-width: none;          /* ウィンドウ幅いっぱいに広げる */
+  min-height: calc(100vh - 48px); /* 画面の高さいっぱいに */
   background: var(--card);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
