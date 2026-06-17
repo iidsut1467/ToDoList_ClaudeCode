@@ -71,20 +71,38 @@ server.mount_proc "/api.php" do |req, res|
         difficulty = ""
         estimate_min = 0
       end
-      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min }
+      # 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
+      parent_id = input["parentId"].to_i
+      todos << { "id" => new_id, "text" => text, "done" => false, "dueAt" => due_at, "priority" => priority, "quick" => quick, "difficulty" => difficulty, "estimateMin" => estimate_min, "parentId" => parent_id }
       save_data(todos)
       res.body = JSON.generate({ "ok" => true, "id" => new_id })
     end
 
-  when "PUT" # 完了状態の更新
+  when "PUT" # 更新（完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
     input = (JSON.parse(req.body) rescue {})
-    todos.each { |t| t["done"] = !!input["done"] if t["id"] == input["id"] }
+    todos.each do |t|
+      next unless t["id"] == input["id"]
+      t["done"] = !!input["done"] if input.key?("done")
+      if input.key?("text")
+        new_text = input["text"].to_s.strip
+        t["text"] = new_text unless new_text.empty?
+      end
+    end
     save_data(todos)
     res.body = JSON.generate({ "ok" => true })
 
-  when "DELETE" # 削除
+  when "DELETE" # 削除（指定タスクと、その子孫すべてを削除）
     input = (JSON.parse(req.body) rescue {})
-    todos.reject! { |t| t["id"] == input["id"] }
+    to_delete = [input["id"]]
+    loop do
+      before = to_delete.size
+      todos.each do |t|
+        pid = t["parentId"] || 0
+        to_delete << t["id"] if to_delete.include?(pid) && !to_delete.include?(t["id"])
+      end
+      break if to_delete.size == before
+    end
+    todos.reject! { |t| to_delete.include?(t["id"]) }
     save_data(todos)
     res.body = JSON.generate({ "ok" => true })
 

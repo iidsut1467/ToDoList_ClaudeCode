@@ -69,7 +69,7 @@ async function loadTodos() {
   render(todos);
 }
 
-// --- 受け取った配列をもとに <li> を組み立てる ---
+// --- 受け取った配列を木構造（根→節→葉）に組み立てて表示する ---
 function render(todos) {
   list.innerHTML = ""; // いったん空にしてから作り直す
 
@@ -78,93 +78,127 @@ function render(todos) {
   emptyMessage.style.display = hasItems ? "none" : "block";
   table.style.display = hasItems ? "table" : "none";
 
-  for (const todo of sortTodos(todos)) {
-    const tr = document.createElement("tr");
-    tr.className = "todo-item" + (todo.done ? " done" : "");
-
-    // 完了（チェックボックス）
-    const tdCheck = document.createElement("td");
-    tdCheck.className = "col-check";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = todo.done;
-    checkbox.addEventListener("change", () => toggleTodo(todo.id, checkbox.checked));
-    tdCheck.append(checkbox);
-
-    // やること（テキスト）
-    const tdText = document.createElement("td");
-    tdText.className = "col-text text-cell";
-    tdText.textContent = todo.text;
-
-    // 期限（残り日数を添え、近い/超過で色を変える）
-    const tdDue = document.createElement("td");
-    if (todo.dueAt) {
-      const due = document.createElement("span");
-      due.className = "due";
-      const d = daysUntil(todo.dueAt);
-      let suffix = "";
-      if (d > 0) {
-        suffix = "（あと" + d + "日）";
-        if (d <= 2) due.classList.add("soon"); // 2日以内はオレンジ
-      } else if (d === 0) {
-        suffix = "（今日まで）";
-        due.classList.add("soon");
-      } else {
-        suffix = "（" + -d + "日超過）";
-        due.classList.add("overdue"); // 期限切れは赤
-      }
-      due.textContent = "📅 " + todo.dueAt + " " + suffix;
-      tdDue.append(due);
-    }
-
-    // 優先度（色付きバッジ）
-    const tdPr = document.createElement("td");
-    const prLabels = { high: "高", mid: "中", low: "低" };
-    if (prLabels[todo.priority]) {
-      const pr = document.createElement("span");
-      pr.className = "priority " + todo.priority;
-      pr.textContent = prLabels[todo.priority];
-      tdPr.append(pr);
-    }
-
-    // 難度／区分（すぐ終わるならその表示、そうでなければ難度）
-    const tdDf = document.createElement("td");
-    if (todo.quick) {
-      const qk = document.createElement("span");
-      qk.className = "quick";
-      qk.textContent = "⚡ すぐ終わる";
-      tdDf.append(qk);
-    } else {
-      const dfLabels = { easy: "易", normal: "普通", hard: "難" };
-      if (dfLabels[todo.difficulty]) {
-        const df = document.createElement("span");
-        df.className = "difficulty " + todo.difficulty;
-        df.textContent = dfLabels[todo.difficulty];
-        tdDf.append(df);
-      }
-    }
-
-    // 所要時間（0より大きければ読みやすく表示）
-    const tdEs = document.createElement("td");
-    if (todo.estimateMin > 0) {
-      const es = document.createElement("span");
-      es.className = "estimate";
-      es.textContent = "⏱ " + formatEstimate(todo.estimateMin);
-      tdEs.append(es);
-    }
-
-    // 削除ボタン
-    const tdDel = document.createElement("td");
-    tdDel.className = "col-del";
-    const del = document.createElement("button");
-    del.className = "delete";
-    del.textContent = "×";
-    del.addEventListener("click", () => deleteTodo(todo.id));
-    tdDel.append(del);
-
-    tr.append(tdCheck, tdText, tdDue, tdPr, tdDf, tdEs, tdDel);
-    list.appendChild(tr);
+  // 親IDごとに子をまとめる（parentId が無い古いデータは 0＝最上位扱い）
+  const childrenMap = {};
+  for (const todo of todos) {
+    const pid = todo.parentId || 0;
+    (childrenMap[pid] = childrenMap[pid] || []).push(todo);
   }
+
+  // 親→子→孫… の順に、深さ(depth)を付けて行を並べる
+  function renderLevel(parentId, depth) {
+    const siblings = sortTodos(childrenMap[parentId] || []);
+    for (const todo of siblings) {
+      list.appendChild(buildRow(todo, depth));
+      renderLevel(todo.id, depth + 1); // その子をすぐ下に続けて表示
+    }
+  }
+  renderLevel(0, 0);
+}
+
+// --- 1件分の行(tr)を組み立てる。depth は階層の深さ（0＝根） ---
+function buildRow(todo, depth) {
+  const tr = document.createElement("tr");
+  tr.className = "todo-item" + (todo.done ? " done" : "");
+
+  // 完了（チェックボックス）
+  const tdCheck = document.createElement("td");
+  tdCheck.className = "col-check";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = todo.done;
+  checkbox.addEventListener("change", () => toggleTodo(todo.id, checkbox.checked));
+  tdCheck.append(checkbox);
+
+  // やること（テキスト）。深さ分だけ字下げし、子には枝記号 └ を付ける
+  const tdText = document.createElement("td");
+  tdText.className = "col-text text-cell";
+  tdText.style.paddingLeft = (8 + depth * 24) + "px";
+  tdText.textContent = (depth > 0 ? "└ " : "") + todo.text;
+
+  // 期限（残り日数を添え、近い/超過で色を変える）
+  const tdDue = document.createElement("td");
+  if (todo.dueAt) {
+    const due = document.createElement("span");
+    due.className = "due";
+    const d = daysUntil(todo.dueAt);
+    let suffix = "";
+    if (d > 0) {
+      suffix = "（あと" + d + "日）";
+      if (d <= 2) due.classList.add("soon"); // 2日以内はオレンジ
+    } else if (d === 0) {
+      suffix = "（今日まで）";
+      due.classList.add("soon");
+    } else {
+      suffix = "（" + -d + "日超過）";
+      due.classList.add("overdue"); // 期限切れは赤
+    }
+    due.textContent = "📅 " + todo.dueAt + " " + suffix;
+    tdDue.append(due);
+  }
+
+  // 優先度（色付きバッジ）
+  const tdPr = document.createElement("td");
+  const prLabels = { high: "高", mid: "中", low: "低" };
+  if (prLabels[todo.priority]) {
+    const pr = document.createElement("span");
+    pr.className = "priority " + todo.priority;
+    pr.textContent = prLabels[todo.priority];
+    tdPr.append(pr);
+  }
+
+  // 難度／区分（すぐ終わるならその表示、そうでなければ難度）
+  const tdDf = document.createElement("td");
+  if (todo.quick) {
+    const qk = document.createElement("span");
+    qk.className = "quick";
+    qk.textContent = "⚡ すぐ終わる";
+    tdDf.append(qk);
+  } else {
+    const dfLabels = { easy: "易", normal: "普通", hard: "難" };
+    if (dfLabels[todo.difficulty]) {
+      const df = document.createElement("span");
+      df.className = "difficulty " + todo.difficulty;
+      df.textContent = dfLabels[todo.difficulty];
+      tdDf.append(df);
+    }
+  }
+
+  // 所要時間（0より大きければ読みやすく表示）
+  const tdEs = document.createElement("td");
+  if (todo.estimateMin > 0) {
+    const es = document.createElement("span");
+    es.className = "estimate";
+    es.textContent = "⏱ " + formatEstimate(todo.estimateMin);
+    tdEs.append(es);
+  }
+
+  // 操作（＋子タスク / 編集 / 削除）
+  const tdActions = document.createElement("td");
+  tdActions.className = "col-actions";
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "action add-child";
+  addBtn.textContent = "＋子";
+  addBtn.title = "子タスクを追加";
+  addBtn.addEventListener("click", () => addChild(todo.id));
+
+  const editBtn = document.createElement("button");
+  editBtn.className = "action edit";
+  editBtn.textContent = "編集";
+  editBtn.title = "名前を編集";
+  editBtn.addEventListener("click", () => editTodo(todo.id, todo.text));
+
+  const del = document.createElement("button");
+  del.className = "delete";
+  del.textContent = "×";
+  del.title = "削除（子タスクも一緒に消えます）";
+  del.addEventListener("click", () => deleteTodo(todo.id));
+
+  tdActions.append(addBtn, editBtn, del);
+
+  tr.append(tdCheck, tdText, tdDue, tdPr, tdDf, tdEs, tdActions);
+  return tr;
 }
 
 // --- 追加：フォーム送信時 ---
@@ -191,7 +225,8 @@ form.addEventListener("submit", async (e) => {
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, dueAt, priority, quick, difficulty, estimateMin }),
+    // フォームからの追加は最上位（根）タスク。parentId は 0
+    body: JSON.stringify({ text, dueAt, priority, quick, difficulty, estimateMin, parentId: 0 }),
   });
 
   input.value = "";
@@ -215,8 +250,40 @@ async function toggleTodo(id, done) {
   loadTodos();
 }
 
-// --- 削除 ---
+// --- 名前(テキスト)の編集 ---
+async function editTodo(id, currentText) {
+  const text = prompt("タスク名を編集:", currentText);
+  if (text === null) return;          // キャンセルされた
+  const trimmed = text.trim();
+  if (!trimmed) return;               // 空のままは無視
+  await fetch(API, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, text: trimmed }),
+  });
+  loadTodos();
+}
+
+// --- 子タスク(節・葉)を追加 ---
+async function addChild(parentId) {
+  const text = prompt("子タスクの名前:");
+  if (text === null) return;          // キャンセルされた
+  const trimmed = text.trim();
+  if (!trimmed) return;               // 空のままは無視
+  await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // 子タスクは既定値で作成し、必要なら後から編集する。parentId に親のIDを指定
+    body: JSON.stringify({ text: trimmed, parentId }),
+  });
+  loadTodos();
+}
+
+// --- 削除（子タスクも一緒に消えるので確認する） ---
 async function deleteTodo(id) {
+  if (!confirm("このタスクを削除します。子タスクがある場合は一緒に削除されます。よろしいですか？")) {
+    return;
+  }
   await fetch(API, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },

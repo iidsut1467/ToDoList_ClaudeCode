@@ -124,8 +124,25 @@ h1 {
 
 /* 列幅の調整 */
 .col-check { width: 44px; text-align: center; }
-.col-del { width: 36px; }
+.col-actions { width: 1%; white-space: nowrap; }
 .col-text { width: 40%; }
+
+/* 操作ボタン（＋子タスク / 編集） */
+.todo-item .action {
+  border: 1px solid #dfe3eb;
+  background: #fff;
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 3px 8px;
+  margin-right: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.todo-item .action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* やること欄：日本語が1文字ずつ折り返さないよう、普通に改行する */
 .todo-item .text-cell {

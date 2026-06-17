@@ -82,19 +82,30 @@ switch ($method) {
             $difficulty = "";
             $estimateMin = 0;
         }
-        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin];
+        // 親タスクのID（0＝最上位の根タスク。子タスク追加時に親IDが入る）
+        $parentId = (int)($input["parentId"] ?? 0);
+        $todos[] = ["id" => $newId, "text" => $text, "done" => false, "dueAt" => $dueAt, "priority" => $priority, "quick" => $quick, "difficulty" => $difficulty, "estimateMin" => $estimateMin, "parentId" => $parentId];
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true, "id" => $newId]);
         break;
 
-    // 完了状態の更新
+    // 更新（完了状態の切替 / 名前の編集）。送られてきた項目だけ更新する
     case "PUT":
         $input = getInput();
         $id = $input["id"] ?? null;
-        $done = (bool)($input["done"] ?? false);
         foreach ($todos as &$t) {
             if ($t["id"] === $id) {
-                $t["done"] = $done;
+                // done が送られてきたときだけ完了状態を更新
+                if (array_key_exists("done", $input)) {
+                    $t["done"] = (bool)$input["done"];
+                }
+                // text が送られてきたときだけ名前を更新（空文字は無視）
+                if (array_key_exists("text", $input)) {
+                    $newText = trim($input["text"]);
+                    if ($newText !== "") {
+                        $t["text"] = $newText;
+                    }
+                }
             }
         }
         unset($t); // 参照を解除（PHPのforeach&定番の後始末）
@@ -102,13 +113,25 @@ switch ($method) {
         echo json_encode(["ok" => true]);
         break;
 
-    // 削除
+    // 削除（指定タスクと、その子孫すべてを削除）
     case "DELETE":
         $input = getInput();
         $id = $input["id"] ?? null;
-        // 指定IDを除いた配列に作り直す
-        $todos = array_values(array_filter($todos, function ($t) use ($id) {
-            return $t["id"] !== $id;
+        // 削除対象のIDを集める。親が対象なら子も対象に加える、を変化が無くなるまで繰り返す
+        $toDelete = [$id];
+        do {
+            $changed = false;
+            foreach ($todos as $t) {
+                $pid = $t["parentId"] ?? 0;
+                if (in_array($pid, $toDelete, true) && !in_array($t["id"], $toDelete, true)) {
+                    $toDelete[] = $t["id"];
+                    $changed = true;
+                }
+            }
+        } while ($changed);
+        // 集めたIDを除いた配列に作り直す
+        $todos = array_values(array_filter($todos, function ($t) use ($toDelete) {
+            return !in_array($t["id"], $toDelete, true);
         }));
         saveData($dataFile, $todos);
         echo json_encode(["ok" => true]);
