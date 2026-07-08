@@ -3,3 +3,6 @@ data.json
 
 # macOSが作る不要ファイル
 .DS_Store
+
+# 個人用のローカル設定（自動pushフック等。共有しない）
+.claude/settings.local.json
